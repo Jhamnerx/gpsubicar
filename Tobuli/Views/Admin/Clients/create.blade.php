@@ -41,6 +41,9 @@
                 </a>
             </li>
         @endif
+        @if (Auth::user()->isAdmin())
+            <li><a href="#client-add-form-integrations" role="tab" data-toggle="tab">{{ trans('front.integrations') }}</a></li>
+        @endif
     </ul>
 
     {!! Form::open(array('route' => 'admin.clients.store', 'method' => 'POST')) !!}
@@ -347,6 +350,11 @@
             </div>
         @endif
 
+        @if (Auth::user()->isAdmin())
+            <div id="client-add-form-integrations" class="tab-pane">
+                @include('Admin.Clients.partials.integrations')
+            </div>
+        @endif
         <div id="client-add-form-login-periods" class="tab-pane"></div>
         <div id="client-add-form-report-types" class="tab-pane"></div>
     </div>

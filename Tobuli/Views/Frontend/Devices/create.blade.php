@@ -17,6 +17,9 @@
         @endif
         <li><a href="#device-add-form-accuracy" role="tab" data-toggle="tab">{!!trans('front.accuracy')!!}</a></li>
         <li><a href="#device-add-form-tail" role="tab" data-toggle="tab">{!!trans('front.tail')!!}</a></li>
+        @if (Auth::user()->can('view', $item, 'mtc') || Auth::user()->can('view', $item, 'mininter'))
+            <li><a href="#device-add-form-integrations" role="tab" data-toggle="tab">{!!trans('front.integrations')!!}</a></li>
+        @endif
         <li><a href="javascript:" role="tab" class="disabled">{!!trans('front.services')!!}</a></li>
         @if (Auth::user()->can('view', $item, 'custom_fields') && $item->hasCustomFields())
             <li><a href="#device-custom-fields" role="tab" data-toggle="tab">{!!trans('admin.custom_fields')!!}</a></li>
@@ -60,6 +63,12 @@
         <div id="device-add-form-tail" class="tab-pane">
             @include('Frontend.Devices.partials.tail')
         </div>
+
+        @if (Auth::user()->can('view', $item, 'mtc') || Auth::user()->can('view', $item, 'mininter'))
+            <div id="device-add-form-integrations" class="tab-pane">
+                @include('Frontend.Devices.partials.integrations')
+            </div>
+        @endif
 
         @if (Auth::user()->can('view', $item, 'custom_fields') && $item->hasCustomFields())
             <div id="device-custom-fields" class="tab-pane">
@@ -109,6 +118,12 @@
             $('select[name="device_icons_type"]').trigger('change');
 
             $('#devices_create input[name="forward[active]"]').trigger('change');
+
+            $(document).on('change', '#devices_create input[name="mininter"]', function () {
+                $('#devices_create select[name="mininter_type"]').prop('disabled', !$(this).prop('checked'));
+            });
+
+            $('#devices_create input[name="mininter"]').trigger('change');
 
             $('#devices_create select[name="fuel_measurement_id"]').trigger('change');
 

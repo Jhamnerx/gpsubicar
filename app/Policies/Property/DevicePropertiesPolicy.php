@@ -34,6 +34,9 @@ class DevicePropertiesPolicy extends PropertyPolicy
         'max_speed',
         'lbs',
         'tags',
+        'mtc',
+        'mininter',
+        'mininter_type',
     ];
 
     protected $viewable = [
@@ -61,6 +64,9 @@ class DevicePropertiesPolicy extends PropertyPolicy
         'max_speed',
         'lbs',
         'tags',
+        'mtc',
+        'mininter',
+        'mininter_type',
     ];
 
     protected function expirationDateEditPolicy(User $user, Model $model)
@@ -124,5 +130,42 @@ class DevicePropertiesPolicy extends PropertyPolicy
     protected function tagsEditPolicy()
     {
         return config('addon.tags');
+    }
+
+    // Integraciones SUTRAN / MININTER: solo administradores y managers.
+
+    protected function mtcViewPolicy(User $user, Model $model)
+    {
+        return $this->integrationsPolicy($user);
+    }
+
+    protected function mtcEditPolicy(User $user, Model $model)
+    {
+        return $this->integrationsPolicy($user);
+    }
+
+    protected function mininterViewPolicy(User $user, Model $model)
+    {
+        return $this->integrationsPolicy($user);
+    }
+
+    protected function mininterEditPolicy(User $user, Model $model)
+    {
+        return $this->integrationsPolicy($user);
+    }
+
+    protected function mininterTypeViewPolicy(User $user, Model $model)
+    {
+        return $this->integrationsPolicy($user);
+    }
+
+    protected function mininterTypeEditPolicy(User $user, Model $model)
+    {
+        return $this->integrationsPolicy($user);
+    }
+
+    private function integrationsPolicy(User $user): bool
+    {
+        return $user->isAdmin() || $user->isManager();
     }
 }

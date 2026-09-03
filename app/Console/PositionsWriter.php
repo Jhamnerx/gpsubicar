@@ -5,6 +5,7 @@ namespace App\Console;
 use App\Events\DeviceEngineChanged;
 use App\Events\DevicePositionChanged;
 use App\Events\PositionResultRetrieved;
+use App\Services\Integrations\IntegrationPositionRecorder;
 use Bugsnag\BugsnagLaravel\Facades\Bugsnag as Bugsnag;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
@@ -57,6 +58,7 @@ class PositionsWriter
     protected $eventWriteService = null;
     protected TaskStatusChanger $taskStatusChanger;
     protected ?LbsInterface $lbsService = null;
+    protected ?IntegrationPositionRecorder $integrationRecorder = null;
 
     protected ?string $recalculationDate = null;
     protected float $odometerDistance = 0;
@@ -93,7 +95,7 @@ class PositionsWriter
 
     protected function line($text = '')
     {
-        if ( ! $this->debug)
+        if (! $this->debug)
             return;
 
         echo $text . PHP_EOL;
@@ -113,14 +115,14 @@ class PositionsWriter
         $n = 0;
         $start = microtime(true);
 
-        foreach($this->stack->getKeyDataList($key) as $data) {
+        foreach ($this->stack->getKeyDataList($key) as $data) {
             $s = microtime(true);
 
             $data = $this->normalizeData($data);
 
             $n += microtime(true) - $s;
 
-            if ( ! $data )
+            if (! $data)
                 continue;
 
             $this->proccess($data);
@@ -141,10 +143,10 @@ class PositionsWriter
 
     protected function normalizeData($data)
     {
-        if ( ! empty($data['deviceId']))
+        if (! empty($data['deviceId']))
             $data['imei'] = $data['deviceId'];
 
-        if ( ! empty($data['uniqueId']))
+        if (! empty($data['uniqueId']))
             $data['imei'] = $data['uniqueId'];
 
         if (empty($data['imei']))
@@ -169,18 +171,16 @@ class PositionsWriter
         $data['altitude'] = floatval($data['altitude']);
 
         if ($data['ack']) {
-            if ( ! empty($data['deviceTime'])) {
+            if (! empty($data['deviceTime'])) {
                 $data['device_time'] = date('Y-m-d H:i:s', $data['deviceTime'] / 1000);
-            }
-            else {
+            } else {
                 $data['device_time'] = null;
             }
         } else {
             $data['device_time'] = date('Y-m-d H:i:s', $data['fixTime'] / 1000);
         }
 
-        if (is_null($data['device_time']))
-        {
+        if (is_null($data['device_time'])) {
             $data['device_time'] = $this->device->getDeviceTime() ?? date('Y-m-d H:i:s');
         }
 
@@ -194,8 +194,7 @@ class PositionsWriter
 
         $data['time'] = $data['device_time'];
 
-        if ($this->device->timezone)
-        {
+        if ($this->device->timezone) {
             $data['time'] = date('Y-m-d H:i:s', strtotime($this->device->timezone->zone, strtotime($data['time'])));
         }
 
@@ -229,7 +228,7 @@ class PositionsWriter
 
         $parameters = [];
         foreach ((is_array($data['attributes']) ? $data['attributes'] : []) as $key => $value) {
-            $key = preg_replace('/[^a-zA-Z0-9_-]/s','', $key);
+            $key = preg_replace('/[^a-zA-Z0-9_-]/s', '', $key);
             $key = strtolower($key);
             $parameters[$key] = is_string($value)
                 ? str_replace('&', '', $value)
@@ -250,7 +249,7 @@ class PositionsWriter
         if (!is_null($accuracy))
             $parameters['accuracy'] = $accuracy;
 
-        if ( $this->getProtocolConfig($data['protocol'], 'mergeable') && $prevPosition = $this->getPrevPosition($data['time']) ) {
+        if ($this->getProtocolConfig($data['protocol'], 'mergeable') && $prevPosition = $this->getPrevPosition($data['time'])) {
             $excepts = $this->getProtocolConfig($data['protocol'], 'expects') ?? [];
             $excepts = array_merge(['alarm', 'result', 'sat'], $excepts);
 
@@ -258,7 +257,7 @@ class PositionsWriter
             $parameters = array_merge($prevParameters, $parameters);
         }
 
-        if ( ! empty($parameters['ip'])) {
+        if (! empty($parameters['ip'])) {
             $this->positionsIpLog->add($data['imei'], $parameters['ip']);
             unset($parameters['ip']);
         }
@@ -267,7 +266,9 @@ class PositionsWriter
 
         $params = empty($this->device->parameters) ? [] : json_decode($this->device->parameters, true);
         $params = empty($params) ? [] : array_flip($params);
-        $params = array_map(function($val) { return strtolower($val); }, $params);
+        $params = array_map(function ($val) {
+            return strtolower($val);
+        }, $params);
 
         $merge = array_keys(array_merge($parameters, $params));
         if (count($params) != count($merge)) {
@@ -346,7 +347,7 @@ class PositionsWriter
 
     protected function getPrevPosition($time = null)
     {
-        if ( ! is_null($this->prevPosition))
+        if (! is_null($this->prevPosition))
             return $this->prevPosition;
 
         if (is_null($time) && $this->position)
@@ -390,8 +391,7 @@ class PositionsWriter
         if ($this->prev_position_device_object && is_null($this->prevPosition) && ! $this->isHistory($time))
             $this->prevPosition = $this->getLastPosition();
 
-        if (is_null($this->prevPosition))
-        {
+        if (is_null($this->prevPosition)) {
             $this->line('Getting history prev with null');
 
             $this->prevPosition = $this->getPrevHistoryPosition($time);
@@ -440,7 +440,7 @@ class PositionsWriter
             return $this->device->positions()
                 ->orderliness()
                 ->where('time', '<=', $time)
-                ->when($onlyValid, function($query) {
+                ->when($onlyValid, function ($query) {
                     $query->where('valid', '>', 0);
                 })
                 ->first();
@@ -451,7 +451,7 @@ class PositionsWriter
 
     protected function getLastPosition()
     {
-        if ( ! $this->device->traccar)
+        if (! $this->device->traccar)
             return null;
 
         if (empty($this->device->traccar->lastValidLatitude) && empty($this->device->traccar->lastValidLongitude))
@@ -483,7 +483,7 @@ class PositionsWriter
             event(new PositionResultRetrieved($this->device, is_scalar($result) ? $result : json_encode($result)));
         }
 
-        if ( ! $this->device->traccar)
+        if (! $this->device->traccar)
             return;
 
         $this->position = new Position($data);
@@ -499,8 +499,7 @@ class PositionsWriter
 
         $lastValidPosition = $this->getPrevValidPosition();
 
-        if (!$this->isValidPositionLatLng($this->position))
-        {
+        if (!$this->isValidPositionLatLng($this->position)) {
             if ($lastValidPosition) {
                 $this->position->latitude = $lastValidPosition->latitude;
                 $this->position->longitude = $lastValidPosition->longitude;
@@ -524,8 +523,7 @@ class PositionsWriter
             );
 
 
-        if ($this->position->valid && $lastValidPosition)
-        {
+        if ($this->position->valid && $lastValidPosition) {
             $this->position->distance = getDistance(
                 $this->position->latitude,
                 $this->position->longitude,
@@ -540,8 +538,7 @@ class PositionsWriter
                 ! in_array($this->position->protocol, $skipProtocols) &&
                 $this->position->distance > 10 &&
                 $this->getLastPosition() && $this->getLastPosition()->id > 50
-            )
-            {
+            ) {
                 $time = strtotime($this->position->time) - strtotime($lastValidPosition->time);
 
                 if ($time > 0) {
@@ -557,12 +554,10 @@ class PositionsWriter
         }
 
         //tmp
-        if ( ! $this->position->isValid())
-        {
+        if (! $this->position->isValid()) {
             $this->position->distance = 0;
 
-            if ($this->overwrite_invalid && $lastValidPosition)
-            {
+            if ($this->overwrite_invalid && $lastValidPosition) {
                 $this->position->latitude = $lastValidPosition->latitude;
                 $this->position->longitude = $lastValidPosition->longitude;
             }
@@ -622,11 +617,33 @@ class PositionsWriter
         if ($this->events || count($this->positions) > 100) {
             $this->write();
         }
+
+        $this->recordIntegrations();
+    }
+
+    /**
+     * Encola la posición para SUTRAN / MININTER si el dispositivo lo tiene activado.
+     * El recorder captura sus propias excepciones: nunca frena la escritura de posiciones.
+     */
+    protected function recordIntegrations()
+    {
+        if (! $this->device->mtc && ! $this->device->mininter)
+            return;
+
+        $this->integrationRecorder()->record($this->device, $this->position, $this->getPrevPosition());
+    }
+
+    protected function integrationRecorder(): IntegrationPositionRecorder
+    {
+        if (is_null($this->integrationRecorder))
+            $this->integrationRecorder = new IntegrationPositionRecorder();
+
+        return $this->integrationRecorder;
     }
 
     protected function getEngineStatus($position)
     {
-        if ( ! isset($this->engine_sensor))
+        if (! isset($this->engine_sensor))
             $this->engine_sensor = $this->device->getEngineSensor();
 
         if ($this->engine_sensor)
@@ -654,7 +671,7 @@ class PositionsWriter
         if ($duration > $timeout)
             return $engineHours;
 
-        if ( ! isset($this->engine_hours_sensor))
+        if (! isset($this->engine_hours_sensor))
             $this->engine_hours_sensor = $this->device->getEngineHoursSensor();
 
         if ($this->engine_hours_sensor && $this->engine_hours_sensor->shown_value_by == 'logical') {
@@ -665,13 +682,14 @@ class PositionsWriter
             $prevEngineStatus = $this->device->traccar->engine_on_at > $this->device->traccar->engine_off_at;
         }
 
-        if ( ! $prevEngineStatus)
+        if (! $prevEngineStatus)
             return $engineHours;
 
         return $engineHours + $duration;
     }
 
-    protected function cacheAlerts($alerts) {
+    protected function cacheAlerts($alerts)
+    {
         $cacheCount = 0;
         /** @var \Tobuli\Entities\Alert $alert */
         foreach ($alerts as $alert) {
@@ -701,8 +719,7 @@ class PositionsWriter
 
     protected function alerts()
     {
-        if (is_null($this->alertChecker))
-        {
+        if (is_null($this->alertChecker)) {
             $start = microtime(true);
 
             $alerts = $this->device
@@ -718,13 +735,13 @@ class PositionsWriter
             if ($count = count($alerts)) {
                 $this->alertChecker = new Checker($this->device, $alerts);
 
-                $this->line('Alerts: '.count($alerts).' '.$alerts->implode('type', ','));
+                $this->line('Alerts: ' . count($alerts) . ' ' . $alerts->implode('type', ','));
             } else {
                 $this->alertChecker = false;
             }
 
             $end = microtime(true);
-            $this->line('Alerts getting time '.round($end - $start, 5));
+            $this->line('Alerts getting time ' . round($end - $start, 5));
         }
 
         if ($this->alertChecker === false)
@@ -738,7 +755,7 @@ class PositionsWriter
         $this->events = $this->alertChecker->check($this->position, $this->getPrevPosition());
 
         $end = microtime(true);
-        $this->line('Alerts check time '.round($end - $start, 5));
+        $this->line('Alerts check time ' . round($end - $start, 5));
     }
 
     protected function checkableAlerts()
@@ -768,7 +785,7 @@ class PositionsWriter
 
                 $sensorValue = null;
 
-                if ( $sensor->isCounter()) {
+                if ($sensor->isCounter()) {
                     if ($sensorValue = $sensor->getValueParameters($this->position))
                         $sensor->setCounter($sensorValue);
 
@@ -780,7 +797,7 @@ class PositionsWriter
                     continue;
                 }
 
-                if ( $sensor->type == 'engine_hours' && $sensor->shown_value_by == 'logical') {
+                if ($sensor->type == 'engine_hours' && $sensor->shown_value_by == 'logical') {
                     $logicalValue = $sensor->getValueParameters($this->position);
 
                     if (is_null($logicalValue) && $prevPosition = $this->getPrevPosition()) {
@@ -801,12 +818,12 @@ class PositionsWriter
                     continue;
                 }
 
-                if ( $sensor->isUpdatable()) {
+                if ($sensor->isUpdatable()) {
                     $sensorValue = $sensor->getValue($this->position->other, false);
                     $sensor->setValue($sensorValue, $this->position);
                 }
 
-                if ( ! $sensor->isPositionValue())
+                if (! $sensor->isPositionValue())
                     continue;
 
                 if ($this->isHistory()) {
@@ -817,11 +834,11 @@ class PositionsWriter
                     }
 
                     $sensorValue = $sensor->getValue($this->position->other, false) ?? $prevSensorValue;
-                } elseif(is_null($sensorValue)) {
+                } elseif (is_null($sensorValue)) {
                     $sensorValue = $sensor->getValue($this->position->other);
                 }
 
-                if ( ! is_null($sensorValue)) {
+                if (! is_null($sensorValue)) {
                     $sensorsValues[] = [
                         'id'  => $sensor->id,
                         'val' => $sensorValue
@@ -836,7 +853,7 @@ class PositionsWriter
 
     protected function getRFIDs($position)
     {
-        if ( ! isset($this->rfid_sensor))
+        if (! isset($this->rfid_sensor))
             $this->rfid_sensor = $this->device->getRfidSensor();
 
         if ($this->rfid_sensor) {
@@ -918,7 +935,7 @@ class PositionsWriter
 
         $latest_positions = $this->device->traccar->latest_positions ? explode(';', $this->device->traccar->latest_positions) : [];
 
-        if ( ! $latest_positions) {
+        if (! $latest_positions) {
             array_unshift($latest_positions, $position->latitude . '/' . $position->longitude);
         } else {
             list($lat, $lng) = explode('/', reset($latest_positions));
@@ -1128,7 +1145,7 @@ class PositionsWriter
     {
         $this->positions[] = $position;
 
-        $this->positions = Arr::sort($this->positions, function($value){
+        $this->positions = Arr::sort($this->positions, function ($value) {
             return $value->time;
         });
 
@@ -1140,11 +1157,13 @@ class PositionsWriter
         $this->line('Updating last position...');
 
         // skip if new position
-        if ( ! $position->id)
+        if (! $position->id)
             return;
 
         // skip if position already in list
-        if (array_filter($this->positions, function($value) use ($position) { return $position->id == $value->id; }))
+        if (array_filter($this->positions, function ($value) use ($position) {
+            return $position->id == $value->id;
+        }))
             return;
 
         $this->addPosition($position);
@@ -1158,8 +1177,8 @@ class PositionsWriter
     protected function write()
     {
         $this->line('Writing:');
-        $this->line('Positions '.count($this->positions));
-        $this->line('Events '.count($this->events));
+        $this->line('Positions ' . count($this->positions));
+        $this->line('Events ' . count($this->events));
 
         $start = microtime(true);
 
@@ -1192,22 +1211,20 @@ class PositionsWriter
 
         $end = microtime(true);
 
-        $this->line('Write time '.($end - $start));
+        $this->line('Write time ' . ($end - $start));
 
         $this->forwards->send();
     }
 
     protected function writePositions()
     {
-        if ( ! $this->positions)
+        if (! $this->positions)
             return;
 
         $data = [];
 
-        foreach ($this->positions as $position)
-        {
-            if ($position->id)
-            {
+        foreach ($this->positions as $position) {
+            if ($position->id) {
                 $this->line('Saving updated position...');
                 $position->save();
                 continue;
@@ -1232,7 +1249,7 @@ class PositionsWriter
 
         $count = count($data);
 
-        if ( ! $count)
+        if (! $count)
             return;
 
         try {
@@ -1251,35 +1268,33 @@ class PositionsWriter
         }
     }
 
-    protected function writePositionData($data, $multi) {
-        if ($multi)
-        {
+    protected function writePositionData($data, $multi)
+    {
+        if ($multi) {
             $this->device->positions()->insert($data);
             $lastPosition = $this->device->positions()->orderliness()->first();
             $this->device->traccar->latestPosition_id = $lastPosition->id;
-
-        } else
-        {
+        } else {
             $position = $this->device->positions()->create($data[0]);
 
-            if ( ! $this->isHistory())
+            if (! $this->isHistory())
                 $this->device->traccar->latestPosition_id = $position->id;
         }
     }
 
     protected function writeEvents()
     {
-        if ( ! $this->events)
+        if (! $this->events)
             return;
 
         $insertedPosition = $this->device->positions()->orderBy('time', 'desc')->first();
 
-        if ( ! $insertedPosition) {
+        if (! $insertedPosition) {
             $this->events = [];
             return;
         }
 
-        $this->events = array_map(function($event) use ($insertedPosition) {
+        $this->events = array_map(function ($event) use ($insertedPosition) {
             $event->position_id = $insertedPosition->id;
             return $event;
         }, $this->events);
@@ -1291,7 +1306,7 @@ class PositionsWriter
 
     protected function getProtocolConfig($protocol, $key)
     {
-        $config = \Illuminate\Support\Facades\Cache::store('array')->rememberForever("protocol.$protocol", function() use ($protocol) {
+        $config = \Illuminate\Support\Facades\Cache::store('array')->rememberForever("protocol.$protocol", function () use ($protocol) {
             //get parent protocol
             $parts = explode('-', $protocol, 2);
 

@@ -16,6 +16,9 @@
         <li><a href="#device-form-services" role="tab" data-toggle="tab">{!!trans('front.services')!!}</a></li>
         <li><a href="#device-form-accuracy" role="tab" data-toggle="tab">{!!trans('front.accuracy')!!}</a></li>
         <li><a href="#device-form-tail" role="tab" data-toggle="tab">{!!trans('front.tail')!!}</a></li>
+        @if (Auth::user()->can('view', $item, 'mtc') || Auth::user()->can('view', $item, 'mininter'))
+            <li><a href="#device-form-integrations" role="tab" data-toggle="tab">{!!trans('front.integrations')!!}</a></li>
+        @endif
         @if(expensesTypesExist())
             <li><a href="#device-form-expenses" role="tab" data-toggle="tab" data-url="{{ route('device_expenses.index', $item->id) }}">{!!trans('front.expenses')!!}</a></li>
         @endif
@@ -68,6 +71,12 @@
         <div id="device-form-tail" class="tab-pane">
             @include('Frontend.Devices.partials.tail')
         </div>
+
+        @if (Auth::user()->can('view', $item, 'mtc') || Auth::user()->can('view', $item, 'mininter'))
+            <div id="device-form-integrations" class="tab-pane">
+                @include('Frontend.Devices.partials.integrations')
+            </div>
+        @endif
 
         @if(expensesTypesExist())
             <div id="device-form-expenses" class="tab-pane"></div>
@@ -129,6 +138,12 @@
             $('select[name="device_icons_type"]').trigger('change');
 
             $('#devices_edit input[name="forward[active]"]').trigger('change');
+
+            $(document).on('change', '#devices_edit input[name="mininter"]', function () {
+                $('#devices_edit select[name="mininter_type"]').prop('disabled', !$(this).prop('checked'));
+            });
+
+            $('#devices_edit input[name="mininter"]').trigger('change');
 
             $('#devices_edit select[name="engine_hours"]').trigger('change');
 

@@ -1,5 +1,7 @@
 <?php namespace App\Console;
 
+use App\Jobs\DispatchMininterJobs;
+use App\Jobs\DispatchSutranJobs;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -69,6 +71,7 @@ class Kernel extends ConsoleKernel {
         'App\Console\Commands\BackupImportCommand',
         'App\Console\Commands\DeleteInvalidFuelEventsCommand',
         'App\Console\Commands\DeviceServerReconfigCommand',
+        'App\Console\Commands\Integrations\CleanIntegrationsCommand',
     ];
 
     /**
@@ -132,6 +135,37 @@ class Kernel extends ConsoleKernel {
         $schedule
             ->command('passport:purge')
             ->daily();
+
+        $this->scheduleIntegrations($schedule);
+    }
+
+    /**
+     * Retransmisión a SUTRAN / MININTER (config/integrations.php):
+     * worker de las colas dedicadas, dispatchers cada minuto y limpieza diaria.
+     */
+    protected function scheduleIntegrations(Schedule $schedule)
+    {
+        $queues = implode(',', array_unique([
+            config('integrations.sutran.queue', 'web-services-sutran'),
+            config('integrations.mininter.queue', 'web-services-mininter'),
+        ]));
+
+        $schedule
+            ->command("queue:work redis --sleep=3 --tries=3 --timeout=300 --queue={$queues}")
+            ->everyMinute()
+            ->withoutOverlapping();
+
+        if (config('integrations.sutran.enabled')) {
+            $schedule->job(new DispatchSutranJobs())->everyMinute();
+        }
+
+        if (config('integrations.mininter.enabled')) {
+            $schedule->job(new DispatchMininterJobs())->everyMinute();
+        }
+
+        $schedule
+            ->command('integrations:clean')
+            ->dailyAt('03:30');
     }
 
     /**

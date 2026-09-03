@@ -73,6 +73,16 @@ class UserService
             $data['manager_id'] = null;
         }
 
+        if (array_key_exists('is_municipalidad', $data)) {
+            $data['is_municipalidad'] = empty($data['is_municipalidad']) ? 0 : 1;
+        }
+
+        foreach (['ubigeo_muni', 'token_muni', 'codigo_comisaria'] as $field) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = trim((string) $data[$field]) ?: null;
+            }
+        }
+
         return $data;
     }
 

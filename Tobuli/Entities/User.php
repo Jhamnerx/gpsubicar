@@ -116,6 +116,10 @@ class User extends AbstractEntity implements
         'company_id',
         'login_periods',
         'only_one_session',
+        'is_municipalidad',
+        'ubigeo_muni',
+        'token_muni',
+        'codigo_comisaria',
     );
 
     protected $casts = [
@@ -130,6 +134,7 @@ class User extends AbstractEntity implements
         'login_periods' => 'array',
         'ungrouped_open' => 'array',
         'map_controls' => 'array',
+        'is_municipalidad' => 'boolean',
     ];
 
     protected $appends = ['role_id'];

@@ -19,6 +19,10 @@ class ClientFormValidator extends Validator {
             'expiration_date' => 'required_if:enable_expiration_date,1|date',
             'default_login_methods' => 'boolean',
             'login_methods' => 'array',
+            'is_municipalidad' => 'nullable|boolean',
+            'ubigeo_muni' => 'nullable|regex:/^\d{6}$/|required_if:is_municipalidad,1',
+            'token_muni' => 'nullable|string|max:255|required_if:is_municipalidad,1',
+            'codigo_comisaria' => 'nullable|string|max:50',
         ],
         'update' => [
             'active' => 'boolean',
@@ -32,6 +36,10 @@ class ClientFormValidator extends Validator {
             'expiration_date' => 'required_if:enable_expiration_date,1|date',
             'default_login_methods' => 'boolean',
             'login_methods' => 'array',
+            'is_municipalidad' => 'nullable|boolean',
+            'ubigeo_muni' => 'nullable|regex:/^\d{6}$/|required_if:is_municipalidad,1',
+            'token_muni' => 'nullable|string|max:255|required_if:is_municipalidad,1',
+            'codigo_comisaria' => 'nullable|string|max:50',
         ]
     ];
 

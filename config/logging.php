@@ -52,6 +52,24 @@ return [
             'days' => 7,
         ],
 
+        // Retransmisión a servicios del Estado: un archivo diario por integración
+        // (storage/logs/integrations). Retención y nivel en config/integrations.php.
+        'sutran' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/integrations/sutran.log'),
+            'level' => env('INTEGRATIONS_LOG_LEVEL', 'info'),
+            'days' => (int) env('INTEGRATIONS_LOG_DAYS', 14),
+            'permission' => 0664,
+        ],
+
+        'mininter' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/integrations/mininter.log'),
+            'level' => env('INTEGRATIONS_LOG_LEVEL', 'info'),
+            'days' => (int) env('INTEGRATIONS_LOG_DAYS', 14),
+            'permission' => 0664,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

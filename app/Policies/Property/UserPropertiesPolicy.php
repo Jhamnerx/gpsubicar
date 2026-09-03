@@ -9,7 +9,15 @@ class UserPropertiesPolicy extends PropertyPolicy
 {
     protected $entity = 'user';
 
-    protected $viewable = ['login_token', 'client_id', 'only_one_session'];
+    protected $viewable = [
+        'login_token',
+        'client_id',
+        'only_one_session',
+        'is_municipalidad',
+        'ubigeo_muni',
+        'token_muni',
+        'codigo_comisaria',
+    ];
 
     protected $editable = [
         'billing_plan_id',
@@ -25,6 +33,10 @@ class UserPropertiesPolicy extends PropertyPolicy
         'login_periods',
         'password',
         'only_one_session',
+        'is_municipalidad',
+        'ubigeo_muni',
+        'token_muni',
+        'codigo_comisaria',
     ];
 
     protected $selfNotEditable = [
@@ -67,6 +79,48 @@ class UserPropertiesPolicy extends PropertyPolicy
     protected function onlyOneSessionEditPolicy()
     {
         return config('addon.one_session_per_user');
+    }
+
+    // Datos de retransmisión MININTER (municipalidad / comisaría): solo administradores.
+
+    protected function isMunicipalidadViewPolicy(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    protected function isMunicipalidadEditPolicy(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    protected function ubigeoMuniViewPolicy(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    protected function ubigeoMuniEditPolicy(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    protected function tokenMuniViewPolicy(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    protected function tokenMuniEditPolicy(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    protected function codigoComisariaViewPolicy(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    protected function codigoComisariaEditPolicy(User $user)
+    {
+        return $user->isAdmin();
     }
 
     protected function _edit(User $user, Model $model, $property)

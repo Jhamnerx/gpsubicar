@@ -109,6 +109,16 @@ class DeviceService
                 ->toDateString();
         }
 
+        foreach (['mtc', 'mininter'] as $integration) {
+            if (array_key_exists($integration, $data)) {
+                $data[$integration] = empty($data[$integration]) ? 0 : 1;
+            }
+        }
+
+        if (array_key_exists('mininter_type', $data) && empty($data['mininter_type'])) {
+            $data['mininter_type'] = Device::MININTER_TYPE_SERENAZGO;
+        }
+
         if ($forwardIP = Arr::get($data, 'forward.ip')) {
             //clear empty
             $data['forward']['ip'] = implode(';', semicol_explode($forwardIP));

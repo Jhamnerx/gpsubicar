@@ -36,6 +36,9 @@
                 </a>
             </li>
         @endif
+        @if (Auth::user()->isAdmin())
+            <li><a href="#client-edit-form-integrations" role="tab" data-toggle="tab">{{ trans('front.integrations') }}</a></li>
+        @endif
     </ul>
 
     {!! Form::open(array('route' => 'admin.clients.update', 'method' => 'PUT')) !!}
@@ -376,6 +379,11 @@
         @if ($item->hasCustomFields())
             <div id="user-custom-fields" class="tab-pane">
                 @include('Frontend.CustomFields.panel')
+            </div>
+        @endif
+        @if (Auth::user()->isAdmin())
+            <div id="client-edit-form-integrations" class="tab-pane">
+                @include('Admin.Clients.partials.integrations')
             </div>
         @endif
         <div id="client-edit-form-forwards" class="tab-pane"></div>

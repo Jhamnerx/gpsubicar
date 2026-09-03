@@ -94,6 +94,10 @@ class Device extends AbstractEntity implements DisplayInterface, FcmTokenableInt
 
     const STOP_DURATION_OFFSET = 10;
 
+    /** Tipo de unidad para la retransmisión a MININTER (define endpoint e identificadores). */
+    const MININTER_TYPE_SERENAZGO = 'serenazgo';
+    const MININTER_TYPE_POLICIAL  = 'policial';
+
     public static array $displayField = ['imei', 'name'];
 
     protected $table = 'devices';
@@ -148,7 +152,10 @@ class Device extends AbstractEntity implements DisplayInterface, FcmTokenableInt
         'fuel_detect_sec_after_stop',
         'lbs',
         'custom_data',
-        'authentication'
+        'authentication',
+        'mtc',
+        'mininter',
+        'mininter_type',
     );
 
     protected $appends = [
@@ -168,6 +175,8 @@ class Device extends AbstractEntity implements DisplayInterface, FcmTokenableInt
         'currents' => 'array',
         'icon_colors' => 'array',
         'custom_data' => 'array',
+        'mtc' => 'boolean',
+        'mininter' => 'boolean',
     ];
 
     protected $searchable = [
@@ -418,6 +427,36 @@ class Device extends AbstractEntity implements DisplayInterface, FcmTokenableInt
     public function users(): BelongsToMany
     {
         return $this->belongsToMany('Tobuli\Entities\User', 'user_device_pivot', 'device_id', 'user_id')->withPivot('group_id');
+    }
+
+    /** Cola de posiciones pendientes de retransmitir a SUTRAN. */
+    public function sutranPositions()
+    {
+        return $this->hasMany(Sutran::class, 'device_id');
+    }
+
+    /** Cola de posiciones pendientes de retransmitir a MININTER. */
+    public function mininterPositions()
+    {
+        return $this->hasMany(Mininter::class, 'device_id');
+    }
+
+    /**
+     * Usuario del que se toman ubigeo, ID de municipalidad y código de comisaría para MININTER.
+     */
+    public function mininterUser(): ?User
+    {
+        return $this->users->first(function (User $user) {
+            return (bool) $user->is_municipalidad;
+        });
+    }
+
+    public static function mininterTypes(): array
+    {
+        return [
+            self::MININTER_TYPE_SERENAZGO => trans('front.mininter_type_serenazgo'),
+            self::MININTER_TYPE_POLICIAL  => trans('front.mininter_type_policial'),
+        ];
     }
 
     public function driver() {

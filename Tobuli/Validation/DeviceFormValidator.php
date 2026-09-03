@@ -34,7 +34,10 @@ class DeviceFormValidator extends Validator
             'forward.protocol'    => 'required_if:forward.active,1|in:TCP,UDP',
             'msisdn'              => 'sometimes|regex:/^\d{6,20}$/',
             'lbs'                 => 'nullable|boolean',
-            'fuel_detect_sec_after_stop' => 'nullable|numeric|min:60|max:300'
+            'fuel_detect_sec_after_stop' => 'nullable|numeric|min:60|max:300',
+            'mtc'                 => 'nullable|boolean',
+            'mininter'            => 'nullable|boolean',
+            'mininter_type'       => 'nullable|in:serenazgo,policial',
         ],
         'update' => [
             'imei'                => 'sometimes|required|imei|unique:devices,imei,%s',
@@ -60,7 +63,10 @@ class DeviceFormValidator extends Validator
             'forward.protocol'    => 'required_if:forward.active,1|in:TCP,UDP',
             'msisdn'              => 'sometimes|regex:/^\d{6,20}$/',
             'lbs'                 => 'nullable|boolean',
-            'fuel_detect_sec_after_stop' => 'nullable|numeric|min:60|max:300'
+            'fuel_detect_sec_after_stop' => 'nullable|numeric|min:60|max:300',
+            'mtc'                 => 'nullable|boolean',
+            'mininter'            => 'nullable|boolean',
+            'mininter_type'       => 'nullable|in:serenazgo,policial',
         ],
     ];
 
